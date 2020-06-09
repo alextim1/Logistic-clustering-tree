@@ -4,18 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class A(object):
-    def __init__(self, a):
-        self._a = a
 
-    @property
-    def a(self):
-        return self._a
 
 
 if __name__ == '__main__':
 
-    matr = main.pointsField(10, 8, 6, 10)
+    matr = main.pointsField(20, 8, 5, 100)
 
 
     m = main.matr_adj(matr)
@@ -37,14 +31,32 @@ if __name__ == '__main__':
     area = np.pi * 10
 
 
+    plt.subplot(131)
+
     for p in matr:
         if p['id'] == rt[0]:
-            col = [[0,0,0]]
+            col = [[0,0,1]]
+            area = 100
+            al = 1
         else:
             col = [p['color']]
-        plt.scatter(p['xy'][0], p['xy'][1], s=area, c=col, alpha=0.9)
+            area = 10
+            al = 0.7
+        plt.scatter(p['xy'][0], p['xy'][1], s=area, c=col, alpha=al)
 
     plt.title('Scatter plot pythonspot.com')
     plt.xlabel('x')
     plt.ylabel('y')
+    #plt.show()
+
+    xx = []
+    yy = []
+
+    for p in rt:
+        xy = [ppt['xy'] for ppt in matr if ppt['id']==p ]
+        xx.append(xy[0][0])
+        yy.append(xy[0][1])
+
+    plt.subplot(132)
+    plt.plot(xx,yy)
     plt.show()
