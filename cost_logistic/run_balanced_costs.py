@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
-    matr = main.pointsField(20, 8, 5, 100)
+    matr = main.pointsField(20, 8, 4, 100)
 
 
     m = main.matr_adj(matr)

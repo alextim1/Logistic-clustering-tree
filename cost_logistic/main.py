@@ -15,7 +15,8 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
 
     centers = np.block([[np.random.random(nClusters)], [np.random.random(nClusters)]])*scaleDistance
     radiuses = np.random.random(nClusters)*scaleRadius
-    nPoints = np.random.randint(1,pointsRate,nClusters)
+    #nPoints = np.random.randint(1,pointsRate,nClusters)
+    nPoints = [6,6,6,6]
 
     clust = np.array([0,0])
 
@@ -32,10 +33,23 @@ def matr_adj(points):
     return matr
 
 def route(points):
-    rt = np.arange(len(points))
+    # rt = np.arange(len(points))
+    #
+    # np.random.shuffle(rt)
 
-    np.random.shuffle(rt)
+    sh1 = [4,5,6,7]
+    sh2 = [10, 11, 12, 13]
+    sh3 = [16, 17, 18, 19]
 
+    np.random.shuffle(sh1)
+    np.random.shuffle(sh2)
+    np.random.shuffle(sh3)
+
+    rt = [0,1,2,3] + sh1 + [8, 9] + sh2 + [14, 15] + sh3 + [20, 21, 22, 23]
+
+    print(rt)
+
+    rt = np.array(rt)
     return rt
 
 
@@ -208,26 +222,26 @@ class Cluster_Tree(object):
 
 
 
-if __name__ == '__main__':
-
-    matr = pointsField(10, 8, 6, 20)
-    clustering = DBSCAN(eps=1, min_samples=3).fit(matr)
-    colors = {col:[np.random.random(), np.random.random(),np.random.random()] for col in set(clustering.labels_)}
-    colors = [colors.get(k) for k in clustering.labels_]
-
-    area = np.pi * 10
-
-    print(np.block([matr, np.array(clustering.labels_).reshape((len(clustering.labels_), 1))]))
-
-    clr=list_of_clusters(matr)
-    print([cl.cluster_rate for cl in clr])
-    print([cl.points for cl in clr])
-
-    plt.scatter(matr[:,0], matr[:,1], s=area, c=colors, alpha=0.5)
-
-    plt.title('Scatter plot pythonspot.com')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
+# if __name__ == '__main__':
+#
+#     matr = pointsField(10, 8, 6, 20)
+#     clustering = DBSCAN(eps=1, min_samples=3).fit(matr)
+#     colors = {col:[np.random.random(), np.random.random(),np.random.random()] for col in set(clustering.labels_)}
+#     colors = [colors.get(k) for k in clustering.labels_]
+#
+#     area = np.pi * 10
+#
+#     print(np.block([matr, np.array(clustering.labels_).reshape((len(clustering.labels_), 1))]))
+#
+#     clr=list_of_clusters(matr)
+#     print([cl.cluster_rate for cl in clr])
+#     print([cl.points for cl in clr])
+#
+#     plt.scatter(matr[:,0], matr[:,1], s=area, c=colors, alpha=0.5)
+#
+#     plt.title('Scatter plot pythonspot.com')
+#     plt.xlabel('x')
+#     plt.ylabel('y')
+#     plt.show()
 
 
