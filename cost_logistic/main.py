@@ -13,16 +13,44 @@ def scattering(center, n, radius):
 
 def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
 
-    centers = np.block([[np.random.random(nClusters)], [np.random.random(nClusters)]])*scaleDistance
-    radiuses = np.random.random(nClusters)*scaleRadius
-    #nPoints = np.random.randint(1,pointsRate,nClusters)
-    nPoints = [6,6,6,6]
+    # centers = np.block([[np.random.random(nClusters)], [np.random.random(nClusters)]])*scaleDistance
+    # radiuses = np.random.random(nClusters)*scaleRadius
+    # #nPoints = np.random.randint(1,pointsRate,nClusters)
+    # nPoints = [6,6,6,6]
+    #
+    # clust = np.array([0,0])
+    #
+    # for (c,r,n) in zip(centers.T, radiuses, nPoints):
+    #     sc = scattering(c, n ,r)
+    #     clust = np.block([[clust], [sc]])
 
     clust = np.array([0,0])
+    sc = np.array([[8.59, 10.32],
+                    [8.35, 10.27],
+                    [8.45, 10.33],
+                    [8.44, 10.28],
+                    [8.42, 10.36],
+                    [8.53, 10.27],
+                    [16.77, 15.26],
+                    [16.42, 14.98],
+                    [16.53, 14.59],
+                    [16.90, 15.97],
+                    [16.76, 15.36],
+                    [7.92, 12.32],
+                    [16.38, 16.17],
+                    [7.37, 11.98],
+                    [7.83, 12.10],
+                    [7.96, 10.64],
+                    [17.64, 6.22],
+                    [16.91, 5.83],
+                    [7.58, 12.54],
+                    [7.53, 13.06],
+                    [16.61, 4.52],
+                    [17.58, 5.24],
+                    [17.76, 5.91],
+                    [17.52, 6.26]])
 
-    for (c,r,n) in zip(centers.T, radiuses, nPoints):
-        sc = scattering(c, n ,r)
-        clust = np.block([[clust], [sc]])
+    clust = np.block([[clust], [sc]])
 
     points = [{'id': i, 'xy': cl} for (cl,i) in zip(clust[1:,:], range(len(clust)-1))]
 
@@ -33,23 +61,23 @@ def matr_adj(points):
     return matr
 
 def route(points):
-    # rt = np.arange(len(points))
+    rt = np.arange(len(points))
     #
     # np.random.shuffle(rt)
 
-    sh1 = [4,5,6,7]
-    sh2 = [10, 11, 12, 13]
-    sh3 = [16, 17, 18, 19]
-
-    np.random.shuffle(sh1)
-    np.random.shuffle(sh2)
-    np.random.shuffle(sh3)
-
-    rt = [0,1,2,3] + sh1 + [8, 9] + sh2 + [14, 15] + sh3 + [20, 21, 22, 23]
-
-    print(rt)
-
-    rt = np.array(rt)
+    # sh1 = [4,5,6,7]
+    # sh2 = [10, 11, 12, 13]
+    # sh3 = [16, 17, 18, 19]
+    #
+    # np.random.shuffle(sh1)
+    # np.random.shuffle(sh2)
+    # np.random.shuffle(sh3)
+    #
+    # rt = [0,1,2,3] + sh1 + [8, 9] + sh2 + [14, 15] + sh3 + [20, 21, 22, 23]
+    #
+    # print(rt)
+    #
+    # rt = np.array(rt)
     return rt
 
 
@@ -144,10 +172,13 @@ def check_sum(cluster_tree):
 #
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, start_point):
+    def __init__(self, adj, route, start_point, storage_weight):
         self._points = route
-        self._cost = np.sum(self.costs_by_route(adj, route)) + adj[start_point][route[0]]
+
+        self._cost = np.sum(self.costs_by_route(adj, route)) + adj[start_point][route[0]]/storage_weight
         self._weighted_cost = 0
+
+        self._storage_weight = storage_weight
 
 
         if len(route) == 1:
@@ -185,9 +216,11 @@ class Cluster_Tree(object):
 
         return costs
 
-    def list_of_clusters(self, adj, route, start_point, eps=3, min_samples=3):
+    def list_of_clusters(self, adj, route, start_point, eps=3, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
+
+        eps = total_costs[-1]
 
         total_costs_2D = np.array([[tc, 0] for tc in total_costs])
 
@@ -196,7 +229,8 @@ class Cluster_Tree(object):
 
         while all(check == 0):
             clustering = DBSCAN(eps, min_samples).fit(total_costs_2D)
-            eps = max(eps - 0.01, 0.00001)
+            #eps = max(eps - 0.01, 0.00001)
+            eps = 0.9*eps
             check = np.array(clustering.labels_)
 
 
@@ -214,7 +248,7 @@ class Cluster_Tree(object):
 
         for ind in set(cl_index):
             subroute = route[cl_index == ind]
-            clusters.append(Cluster_Tree(adj, subroute, start_point))
+            clusters.append(Cluster_Tree(adj, subroute, start_point, self._storage_weight))
 
 
         return clusters
