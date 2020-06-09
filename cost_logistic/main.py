@@ -53,6 +53,8 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
     clust = np.block([[clust], [sc]])
 
     points = [{'id': i, 'xy': cl} for (cl,i) in zip(clust[1:,:], range(len(clust)-1))]
+    # add storage as last
+    points.append({'id': len(points), 'xy': clust[1,:]})
 
     return points
 
@@ -78,6 +80,8 @@ def route(points):
     # print(rt)
     #
     # rt = np.array(rt)
+
+
     return rt
 
 
@@ -172,10 +176,18 @@ def check_sum(cluster_tree):
 #
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, start_point, storage_weight):
+    def __init__(self, adj, route, total_route, start_point, storage_weight):
         self._points = route
 
-        self._cost = np.sum(self.costs_by_route(adj, route)) + adj[start_point][route[0]]/storage_weight
+        ind = list(total_route).index(route[0])
+
+        if ind == 0:
+            previous_point = total_route[0]
+        else:
+            previous_point = total_route[ind - 1]
+
+
+        self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
         self._weighted_cost = 0
 
         self._storage_weight = storage_weight
@@ -184,7 +196,7 @@ class Cluster_Tree(object):
         if len(route) == 1:
             self._subroutes = None
         else:
-            self._subroutes = self.list_of_clusters(adj, route, start_point)
+            self._subroutes = self.list_of_clusters(adj, route, total_route, start_point)
 
     @property
     def weighted_cost(self):
@@ -216,7 +228,7 @@ class Cluster_Tree(object):
 
         return costs
 
-    def list_of_clusters(self, adj, route, start_point, eps=3, min_samples=2):
+    def list_of_clusters(self, adj, route, total_route, start_point, eps=3, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
 
@@ -248,7 +260,7 @@ class Cluster_Tree(object):
 
         for ind in set(cl_index):
             subroute = route[cl_index == ind]
-            clusters.append(Cluster_Tree(adj, subroute, start_point, self._storage_weight))
+            clusters.append(Cluster_Tree(adj, subroute, total_route, start_point, self._storage_weight))
 
 
         return clusters
