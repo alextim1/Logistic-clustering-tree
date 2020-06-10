@@ -25,30 +25,36 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
     #     clust = np.block([[clust], [sc]])
 
     clust = np.array([0,0])
+    # sc = np.array([[8.59, 10.32],
+    #                 [8.35, 10.27],
+    #                 [8.45, 10.33],
+    #                 [8.44, 10.28],
+    #                 [8.42, 10.36],
+    #                 [8.53, 10.27],
+    #                 [16.77, 15.26],
+    #                 [16.42, 14.98],
+    #                 [16.53, 14.59],
+    #                 [16.90, 15.97],
+    #                 [16.76, 15.36],
+    #                 [7.92, 12.32],
+    #                 [16.38, 16.17],
+    #                 [7.37, 11.98],
+    #                 [7.83, 12.10],
+    #                 [7.96, 10.64],
+    #                 [17.64, 6.22],
+    #                 [16.91, 5.83],
+    #                 [7.58, 12.54],
+    #                 [7.53, 13.06],
+    #                 [16.61, 4.52],
+    #                 [17.58, 5.24],
+    #                 [17.76, 5.91],
+    #                 [17.52, 6.26]])
+
     sc = np.array([[8.59, 10.32],
-                    [8.35, 10.27],
-                    [8.45, 10.33],
-                    [8.44, 10.28],
-                    [8.42, 10.36],
-                    [8.53, 10.27],
-                    [16.77, 15.26],
-                    [16.42, 14.98],
-                    [16.53, 14.59],
-                    [16.90, 15.97],
-                    [16.76, 15.36],
-                    [7.92, 12.32],
-                    [16.38, 16.17],
-                    [7.37, 11.98],
-                    [7.83, 12.10],
-                    [7.96, 10.64],
-                    [17.64, 6.22],
-                    [16.91, 5.83],
-                    [7.58, 12.54],
-                    [7.53, 13.06],
-                    [16.61, 4.52],
-                    [17.58, 5.24],
-                    [17.76, 5.91],
-                    [17.52, 6.26]])
+                   [16.61, 4.52],
+                   [17.58, 5.24],
+                   [17.76, 5.91],
+                   [17.52, 6.26]])
 
     clust = np.block([[clust], [sc]])
 
@@ -210,8 +216,8 @@ class Cluster_Tree(object):
         # self._cost = (len(route) * parent_cost / parent_n_of_points) + w*(np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]])
 
         ######### idea 4aa - low weight of road to the cluster
-        # w = 0.75
-        # self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + w*adj[previous_point][route[0]]
+        w = 0.75
+        self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + w*adj[previous_point][route[0]]
 
 
         ######### idea 5 +-
