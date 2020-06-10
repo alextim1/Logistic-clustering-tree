@@ -176,7 +176,7 @@ def check_sum(cluster_tree):
 #
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, total_route, start_point, storage_weight):
+    def __init__(self, adj, route, total_route, start_point, parent_cost, parent_n_of_points):
         self._points = route
 
         ind = list(total_route).index(route[0])
@@ -187,16 +187,19 @@ class Cluster_Tree(object):
             previous_point = total_route[ind - 1]
 
 
-        self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
+        if len(route) == 1:
+            self._cost = parent_cost/parent_n_of_points
+        else:
+            self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
+
         self._weighted_cost = 0
 
-        self._storage_weight = storage_weight
 
 
         if len(route) == 1:
             self._subroutes = None
         else:
-            self._subroutes = self.list_of_clusters(adj, route, total_route, start_point)
+            self._subroutes = self.list_of_clusters(adj, route, total_route, start_point, self._cost, len(self._points))
 
     @property
     def weighted_cost(self):
@@ -228,7 +231,7 @@ class Cluster_Tree(object):
 
         return costs
 
-    def list_of_clusters(self, adj, route, total_route, start_point, eps=3, min_samples=2):
+    def list_of_clusters(self, adj, route, total_route, start_point, parent_cost, parent_n_of_points, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
 
@@ -260,7 +263,7 @@ class Cluster_Tree(object):
 
         for ind in set(cl_index):
             subroute = route[cl_index == ind]
-            clusters.append(Cluster_Tree(adj, subroute, total_route, start_point, self._storage_weight))
+            clusters.append(Cluster_Tree(adj, subroute, total_route, start_point, parent_cost, parent_n_of_points))
 
 
         return clusters

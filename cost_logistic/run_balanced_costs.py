@@ -18,9 +18,9 @@ if __name__ == '__main__':
     rt = main.route(matr)
 
 
-    storage_weight = 4
 
-    tree = main.Cluster_Tree(m, rt, rt, rt[0], storage_weight)
+
+    tree = main.Cluster_Tree(m, rt, rt, rt[0], 100, len(rt))
 
     maximum = [0]
     main.cost_balancing(tree, 100, maximum)
