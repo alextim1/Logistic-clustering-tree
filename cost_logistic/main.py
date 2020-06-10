@@ -187,10 +187,36 @@ class Cluster_Tree(object):
             previous_point = total_route[ind - 1]
 
 
-        if len(route) == 1:
-            self._cost = parent_cost/parent_n_of_points
-        else:
-            self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
+        ######## idea 1
+
+        # if len(route) == 1:
+        #     self._cost = parent_cost/parent_n_of_points
+        # else:
+        #     self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
+
+
+        ######## idea 2 +
+        #self._cost = max(len(route)*parent_cost/parent_n_of_points, np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]])
+
+
+        ######## idea 3 -
+        #self._cost = (len(route) * parent_cost / parent_n_of_points)*(np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]])
+
+        ######### idea 4 ++
+        #self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]]
+
+        ######### idea 4a - prority of parent cost
+        # w = 0.75
+        # self._cost = (len(route) * parent_cost / parent_n_of_points) + w*(np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]])
+
+        ######### idea 4aa - low weight of road to the cluster
+        # w = 0.75
+        # self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + w*adj[previous_point][route[0]]
+
+
+        ######### idea 5 +-
+        #self._cost = np.mean([len(route) * parent_cost / parent_n_of_points, np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]]])
+
 
         self._weighted_cost = 0
 
