@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import math
 
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def scattering(center, n, radius):
@@ -99,7 +101,7 @@ def show_cluster_tree(cluster_tree, points):
             show_cluster_tree(cl, points)
     else:
         matches = next(x for x in points if x['id'] == cluster_tree.points[0])
-        matches['color'] = [cluster_tree.weighted_cost, 0.1, 0]
+        matches['color'] = cluster_tree.weighted_cost
 
 
 
@@ -115,70 +117,11 @@ def check_sum(cluster_tree):
         return cluster_tree.weighted_cost
 
 #################################################################
-#
-# class Cluster(object):
-#
-#     #Ctor
-#     def __init__(self, matrix, points_ind):
-#         self._points = matrix
-#         self._center_of_gravity = np.array([np.sum(matrix[:,0]), np.sum(matrix[:,1])])/matrix.shape[0]
-#         self._claster_rate = (self.std_euclidian() + np.linalg.norm(self._center_of_gravity))/self._points.shape[0]
-#         self._cluster_cost = 0
-#         self._points_ind = points_ind
-#
-#     #Properties
-#     @property
-#     def center_of_gravity(self):
-#         return self._center_of_gravity
-#
-#     @property
-#     def points(self):
-#         return self._end_points
-#
-#     @property
-#     def cluster_rate(self):
-#         return self._claster_rate
-#
-#     @property
-#     def cluster_cost(self):
-#         return self._cluster_cost
-#
-#     @cluster_cost.setter
-#     def cluster_cost(self, var):
-#         self._cluster_cost = var
-#
-#
-#
-#     #Private methods
-#     def std_euclidian(self):
-#         return np.sqrt((np.sum((self._points[:,0] - self._center_of_gravity[0])**2) + np.sum((self._points[:,1] - self._center_of_gravity[1])**2))/self._points.shape[0])
-#
-#
-#
-#
-#     #Public methods
-#     def individual_cost_calc(self):
-#         norms = [np.linalg.norm(a - self._center_of_gravity) for a in self._points]
-#         sigmaN = np.sum(norms)
-#
-#         if sigmaN == 0:
-#             ind_cost = [(self._cluster_cost, self._cluster_cost)]
-#         else:
-#             ind_cost = [(self._cluster_cost/len(norms), norm*self._cluster_cost/sigmaN) for norm in norms]
-#
-#         for (end_point, cost) in zip(self._end_points, ind_cost):
-#             end_point["cost"] = cost
-#
-#         return
-#
+
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, total_route, start_point, weighted_cost, getting_on_cach):
+    def __init__(self, adj, route, total_route, weighted_cost, getting_on_cach):
         self._points = route
-
-
-        self._getting_on = self.getting_on(adj,route,total_route)
-
 
 
         self._weighted_cost = weighted_cost
@@ -188,7 +131,7 @@ class Cluster_Tree(object):
         if len(route) == 1:
             self._subroutes = None
         else:
-            self._subroutes = self.list_of_clusters(adj, route, total_route, start_point, self._weighted_cost, self._getting_on, getting_on_cach)
+            self._subroutes = self.list_of_clusters(adj, route, total_route, self._weighted_cost, getting_on_cach)
 
     @property
     def weighted_cost(self):
@@ -217,19 +160,19 @@ class Cluster_Tree(object):
 
         return costs
 
-    def getting_on(self, adj, route, total_route):
-        ind = list(total_route).index(route[0])
+    # def getting_on(self, adj, route, total_route):
+    #     ind = list(total_route).index(route[0])
+    #
+    #     if ind == 0:
+    #         previous_point = total_route[0]
+    #     else:
+    #         previous_point = total_route[ind - 1]
+    #
+    #     res = adj[previous_point][route[0]]
+    #
+    #     return res
 
-        if ind == 0:
-            previous_point = total_route[0]
-        else:
-            previous_point = total_route[ind - 1]
-
-        res = adj[previous_point][route[0]]
-
-        return res
-
-    def cost_calc(self, adj, route, total_route, parent_getting_on, getting_on_cach):
+    def cost_calc(self, adj, route, total_route, boundaries, getting_on_cach):
         ind = list(total_route).index(route[0])
 
         if ind == 0:
@@ -249,44 +192,51 @@ class Cluster_Tree(object):
         else:
             getting_on = 0
 
-        #getting_on = adj[previous_point][route[0]]
+        # #debug
 
-            ######## idea 1
+        # if route[0] == 13 and len(route) == 2:
+        # if route[0]==15:
+        #     print('key:' + kombined_key)
+        #
+        #
+        #     print(getting_on)
 
-            # if len(route) == 1:
-            #     self._cost = parent_cost/parent_n_of_points
-            # else:
-            #     self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
 
-            ######## idea 2 +
-            # self._cost = max(len(route)*parent_cost/parent_n_of_points, np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]])
+        storage_weight = 0.01
 
-            ######## idea 3 -
-            # self._cost = np.sum(self.costs_by_route(adj, route)) + (len(route) * parent_cost / parent_n_of_points)*(adj[previous_point][route[0]])
+        if boundaries[2]:
+            shoulder_weight_prev = 0.2
+            shoulder_weight_post = 0.5
+        else:
+            shoulder_weight_prev = 0.5
+            shoulder_weight_post = 0.5
 
-            ######### idea 4 ++
-            # self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]]
+        if len(route) == 1 and ind == 0:
+            #start point case
+            point_cost = storage_weight*adj[route[0]][total_route[ind + 1]]
 
-            ######### idea 4a - prority of parent cost
-            # w = 0.75
-            # self._cost = (len(route) * parent_cost / parent_n_of_points) + w*(np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]])
+        elif len(route) == 1 and ind == len(total_route)-1:
+            #end point case
+            point_cost = storage_weight*adj[route[0]][total_route[ind - 1]]
 
-            ######### idea 4aa - low weight of road to the cluster
-            # w = 0.75
-            # self._cost = (len(route) * parent_cost / parent_n_of_points) + np.sum(self.costs_by_route(adj, route)) + w*adj[previous_point][route[0]]
+        elif len(route) == 1:
 
-            ######### idea 5 +-
-            # self._cost = np.mean([len(route) * parent_cost / parent_n_of_points, np.sum(self.costs_by_route(adj, route)) + adj[previous_point][route[0]]])
+            prev = shoulder_weight_prev*(not boundaries[0])*adj[route[0]][total_route[ind - 1]]
+            post = shoulder_weight_post*(not boundaries[1])*adj[route[0]][total_route[ind + 1]]
+            #point_cost = np.mean([prev, post])
+            point_cost = prev+post
 
-        ########### idea 6 caching cost for getting to the cluster
-        w = 1
-        cost = parent_getting_on + np.sum(self.costs_by_route(adj, route)) + w*getting_on
+        else:
+            point_cost = 0
+
+        w = 1-np.exp(1 - len(route)**(3))
+        cost = point_cost + np.sum(self.costs_by_route(adj, route)) + w*getting_on
 
         return cost
 
 
 
-    def list_of_clusters(self, adj, route, total_route, start_point, weighted_cost, parent_getting_on, getting_on_cach, min_samples=2):
+    def list_of_clusters(self, adj, route, total_route, weighted_cost, getting_on_cach, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
 
@@ -322,17 +272,25 @@ class Cluster_Tree(object):
 
         for ind in set(cl_index):
             subroute = route[cl_index == ind]
-            print(subroute)
+
+            front = subroute[0]==route[0]
+            tail = subroute[-1]==route[-1]
+
+            if subroutes != []:
+                follow_cl = len(subroutes[-1])>1
+            else:
+                follow_cl = False
+
             subroutes.append(subroute)
-            cost = self.cost_calc(adj, subroute, total_route, parent_getting_on, getting_on_cach)
-            print(cost)
+            cost = self.cost_calc(adj, subroute, total_route, (front, tail, follow_cl), getting_on_cach)
+
             costs.append(cost)
 
-        print(costs)
+
         total_cost = np.sum(costs)
 
         for (subroute, cost) in zip(subroutes, costs):
-            clusters.append(Cluster_Tree(adj, subroute, total_route, start_point, weighted_cost*cost/total_cost, getting_on_cach))
+            clusters.append(Cluster_Tree(adj, subroute, total_route, weighted_cost*cost/total_cost, getting_on_cach))
 
 
         return clusters
