@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     getting_on_cach = {}
 
-    tree = main.Cluster_Tree(m, rt, rt, 100, getting_on_cach)
+    tree = main.Cluster_Tree(matr, m, rt, rt, 100)
 
 
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
             al = 0.3
         else:
             col = colorFader(c1, c2, (p['color'] - minimum)/(maximum - minimum))
-            area = 30
+            area = 10*p['color']
             al = 0.9
         ax.scatter(p['xy'][0], p['xy'][1], s=area, c=col, alpha=al)
 

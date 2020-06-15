@@ -43,8 +43,8 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
                     [7.37, 11.98],
                     [7.83, 12.10],
                     [7.96, 10.64],
-                    [17.64, 6.22],
-                    [16.91, 5.83],
+                    [17.64, 2.22],
+                    [16.91, 1.83],
                     [7.58, 12.54],
                     [7.53, 13.06],
                     [16.61, 4.52],
@@ -68,7 +68,7 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
 
 def matr_adj(points):
     matr = [[np.linalg.norm(a['xy'] - b['xy']) for b in points] for a in points]
-    return matr
+    return np.array(matr)
 
 def route(points):
     rt = np.arange(len(points))
@@ -120,7 +120,9 @@ def check_sum(cluster_tree):
 
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, total_route, weighted_cost, getting_on_cach):
+
+
+    def __init__(self, matr, adj, route, total_route, weighted_cost):
         self._points = route
 
 
@@ -131,8 +133,12 @@ class Cluster_Tree(object):
         if len(route) == 1:
             self._subroutes = None
         else:
-            self._subroutes = self.list_of_clusters(adj, route, total_route, self._weighted_cost, getting_on_cach)
+            self._subroutes = self.list_of_clusters(matr, adj, route, total_route, self._weighted_cost)
 
+
+
+
+############PROPERTIES#########################
     @property
     def weighted_cost(self):
         return self._weighted_cost
@@ -150,6 +156,9 @@ class Cluster_Tree(object):
     def subroutes(self):
         return self._subroutes
 
+
+#############METHODS#####################################
+
     def costs_by_route(self, adj, route):
         costs = [0]
         if len(route) == 1:
@@ -160,56 +169,18 @@ class Cluster_Tree(object):
 
         return costs
 
-    # def getting_on(self, adj, route, total_route):
-    #     ind = list(total_route).index(route[0])
-    #
-    #     if ind == 0:
-    #         previous_point = total_route[0]
-    #     else:
-    #         previous_point = total_route[ind - 1]
-    #
-    #     res = adj[previous_point][route[0]]
-    #
-    #     return res
 
-    def cost_calc(self, adj, route, total_route, boundaries, getting_on_cach):
+
+    def cost_calc(self, matr, adj, route, total_route, boundaries):
         ind = list(total_route).index(route[0])
 
-        if ind == 0:
-            previous_point = total_route[0]
-        else:
-            previous_point = total_route[ind - 1]
-
-        key1 = str(previous_point)
-        key2 = str(route[0])
-
-        kombined_key = key1 + '_' + key2
-        cached = getting_on_cach.get(kombined_key)
-
-        if cached == None:
-            getting_on = adj[previous_point][route[0]]
-            getting_on_cach[kombined_key] = True
-        else:
-            getting_on = 0
-
-        # #debug
-
-        # if route[0] == 13 and len(route) == 2:
-        # if route[0]==15:
-        #     print('key:' + kombined_key)
-        #
-        #
-        #     print(getting_on)
 
 
         storage_weight = 0.01
 
-        if boundaries[2]:
-            shoulder_weight_prev = 0.2
-            shoulder_weight_post = 0.5
-        else:
-            shoulder_weight_prev = 0.5
-            shoulder_weight_post = 0.5
+
+        shoulder_weight_prev = 0.5
+        shoulder_weight_post = 0.5
 
         if len(route) == 1 and ind == 0:
             #start point case
@@ -223,20 +194,34 @@ class Cluster_Tree(object):
 
             prev = shoulder_weight_prev*(not boundaries[0])*adj[route[0]][total_route[ind - 1]]
             post = shoulder_weight_post*(not boundaries[1])*adj[route[0]][total_route[ind + 1]]
-            #point_cost = np.mean([prev, post])
+
             point_cost = prev+post
 
         else:
             point_cost = 0
 
-        w = 1-np.exp(1 - len(route)**(3))
-        cost = point_cost + np.sum(self.costs_by_route(adj, route)) + w*getting_on
+
+
+
+        X = []
+        Y = []
+        for p in route:
+            X.append(matr[p]['xy'][0])
+            Y.append(matr[p]['xy'][1])
+
+        cg = np.array([np.mean(X), np.mean(Y)])
+        storage = np.array([matr[total_route[0]]['xy'][0], matr[total_route[0]]['xy'][1]])
+
+        cg_distance = np.linalg.norm(storage - cg)
+
+
+        cost = point_cost + np.sum(self.costs_by_route(adj, route)) + cg_distance
 
         return cost
 
 
 
-    def list_of_clusters(self, adj, route, total_route, weighted_cost, getting_on_cach, min_samples=2):
+    def list_of_clusters(self, matr, adj, route, total_route, weighted_cost, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
 
@@ -250,7 +235,7 @@ class Cluster_Tree(object):
         while all(check == 0):
             clustering = DBSCAN(eps, min_samples).fit(total_costs_2D)
 
-            eps = 0.9*eps
+            eps = 0.95*eps
             check = np.array(clustering.labels_)
 
 
@@ -259,6 +244,8 @@ class Cluster_Tree(object):
         cl_index = []
 
         subroutes = []
+
+        lengths = []
 
         costs = []
 
@@ -276,21 +263,30 @@ class Cluster_Tree(object):
             front = subroute[0]==route[0]
             tail = subroute[-1]==route[-1]
 
-            if subroutes != []:
-                follow_cl = len(subroutes[-1])>1
-            else:
-                follow_cl = False
+
 
             subroutes.append(subroute)
-            cost = self.cost_calc(adj, subroute, total_route, (front, tail, follow_cl), getting_on_cach)
+
+            lengths.append(len(subroute))
+
+            cost = self.cost_calc(matr, adj, subroute, total_route, (front, tail))
 
             costs.append(cost)
 
 
+        #Rescaling cluster
+
+        costs = np.array(costs)
+        lengths = np.array(lengths)
+
+
+
+        costs = costs*lengths
+
         total_cost = np.sum(costs)
 
         for (subroute, cost) in zip(subroutes, costs):
-            clusters.append(Cluster_Tree(adj, subroute, total_route, weighted_cost*cost/total_cost, getting_on_cach))
+            clusters.append(Cluster_Tree(matr, adj, subroute, total_route, weighted_cost*cost/total_cost))
 
 
         return clusters
@@ -298,26 +294,6 @@ class Cluster_Tree(object):
 
 
 
-# if __name__ == '__main__':
-#
-#     matr = pointsField(10, 8, 6, 20)
-#     clustering = DBSCAN(eps=1, min_samples=3).fit(matr)
-#     colors = {col:[np.random.random(), np.random.random(),np.random.random()] for col in set(clustering.labels_)}
-#     colors = [colors.get(k) for k in clustering.labels_]
-#
-#     area = np.pi * 10
-#
-#     print(np.block([matr, np.array(clustering.labels_).reshape((len(clustering.labels_), 1))]))
-#
-#     clr=list_of_clusters(matr)
-#     print([cl.cluster_rate for cl in clr])
-#     print([cl.points for cl in clr])
-#
-#     plt.scatter(matr[:,0], matr[:,1], s=area, c=colors, alpha=0.5)
-#
-#     plt.title('Scatter plot pythonspot.com')
-#     plt.xlabel('x')
-#     plt.ylabel('y')
-#     plt.show()
+
 
 
