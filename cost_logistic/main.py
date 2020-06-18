@@ -85,15 +85,15 @@ def route(points):
     return rt
 
 
-def show_cluster_tree(cluster_tree, points, total_cost):
+def show_cluster_tree(cluster_tree, points):
     print(cluster_tree.points)
     print(cluster_tree.weighted_cost)
     if cluster_tree.subroutes != None:
         for cl in cluster_tree.subroutes:
-            show_cluster_tree(cl, points, total_cost)
+            show_cluster_tree(cl, points)
     else:
         matches = next(x for x in points if x['id'] == cluster_tree.points[0])
-        matches['color'] = [cluster_tree.weighted_cost/total_cost, 0.1, 0]
+        matches['color'] = cluster_tree.weighted_cost
 
 
 def cost_balancing(cluster_tree, total_cost, maximum):
@@ -117,80 +117,26 @@ def check_sum(cluster_tree):
     else:
         return cluster_tree.weighted_cost
 
-#################################################################
-#
-# class Cluster(object):
-#
-#     #Ctor
-#     def __init__(self, matrix, points_ind):
-#         self._points = matrix
-#         self._center_of_gravity = np.array([np.sum(matrix[:,0]), np.sum(matrix[:,1])])/matrix.shape[0]
-#         self._claster_rate = (self.std_euclidian() + np.linalg.norm(self._center_of_gravity))/self._points.shape[0]
-#         self._cluster_cost = 0
-#         self._points_ind = points_ind
-#
-#     #Properties
-#     @property
-#     def center_of_gravity(self):
-#         return self._center_of_gravity
-#
-#     @property
-#     def points(self):
-#         return self._end_points
-#
-#     @property
-#     def cluster_rate(self):
-#         return self._claster_rate
-#
-#     @property
-#     def cluster_cost(self):
-#         return self._cluster_cost
-#
-#     @cluster_cost.setter
-#     def cluster_cost(self, var):
-#         self._cluster_cost = var
-#
-#
-#
-#     #Private methods
-#     def std_euclidian(self):
-#         return np.sqrt((np.sum((self._points[:,0] - self._center_of_gravity[0])**2) + np.sum((self._points[:,1] - self._center_of_gravity[1])**2))/self._points.shape[0])
-#
-#
-#
-#
-#     #Public methods
-#     def individual_cost_calc(self):
-#         norms = [np.linalg.norm(a - self._center_of_gravity) for a in self._points]
-#         sigmaN = np.sum(norms)
-#
-#         if sigmaN == 0:
-#             ind_cost = [(self._cluster_cost, self._cluster_cost)]
-#         else:
-#             ind_cost = [(self._cluster_cost/len(norms), norm*self._cluster_cost/sigmaN) for norm in norms]
-#
-#         for (end_point, cost) in zip(self._end_points, ind_cost):
-#             end_point["cost"] = cost
-#
-#         return
-#
+
 
 class Cluster_Tree(object):
-    def __init__(self, adj, route, total_route, start_point, parent_cost, parent_n_of_points):
+    def __init__(self, adj, route, total_route, cost_of_point):
         self._points = route
 
-        ind = list(total_route).index(route[0])
+        # ind = list(total_route).index(route[0])
+        #
+        # if ind == 0:
+        #     previous_point = total_route[0]
+        # else:
+        #     previous_point = total_route[ind - 1]
+        #
+        #
+        # if len(route) == 1:
+        #     self._cost = parent_cost/parent_n_of_points
+        # else:
+        #     self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]
 
-        if ind == 0:
-            previous_point = total_route[0]
-        else:
-            previous_point = total_route[ind - 1]
-
-
-        if len(route) == 1:
-            self._cost = parent_cost/parent_n_of_points
-        else:
-            self._cost = np.sum(self.costs_by_route(adj, route))  +  adj[previous_point][route[0]]    #+ adj[start_point][route[0]]/storage_weight
+        self._cost = cost_of_point
 
         self._weighted_cost = 0
 
@@ -199,7 +145,7 @@ class Cluster_Tree(object):
         if len(route) == 1:
             self._subroutes = None
         else:
-            self._subroutes = self.list_of_clusters(adj, route, total_route, start_point, self._cost, len(self._points))
+            self._subroutes = self.list_of_clusters(adj, route, total_route)
 
     @property
     def weighted_cost(self):
@@ -231,7 +177,7 @@ class Cluster_Tree(object):
 
         return costs
 
-    def list_of_clusters(self, adj, route, total_route, start_point, parent_cost, parent_n_of_points, min_samples=2):
+    def list_of_clusters(self, adj, route, total_route, min_samples=2):
 
         total_costs = np.cumsum(self.costs_by_route(adj, route))
 
@@ -253,6 +199,8 @@ class Cluster_Tree(object):
 
         cl_index = []
 
+        subroutes = []
+
         checksum = np.sum(np.abs(np.array(list(set(clustering.labels_)))))
 
         for l in clustering.labels_:
@@ -263,7 +211,16 @@ class Cluster_Tree(object):
 
         for ind in set(cl_index):
             subroute = route[cl_index == ind]
-            clusters.append(Cluster_Tree(adj, subroute, total_route, start_point, parent_cost, parent_n_of_points))
+            subroutes.append(subroute)
+
+        internal_transfers = 0
+
+        for i in range(len(subroutes) - 1):
+            internal_transfers += adj[subroutes[i][-1]][subroutes[i+1][0]]
+
+        for subroute in subroutes:
+
+            clusters.append(Cluster_Tree(adj, subroute, total_route, self._cost + internal_transfers/(len(subroutes)*len(subroute)**2)))
 
 
         return clusters
@@ -271,26 +228,5 @@ class Cluster_Tree(object):
 
 
 
-# if __name__ == '__main__':
-#
-#     matr = pointsField(10, 8, 6, 20)
-#     clustering = DBSCAN(eps=1, min_samples=3).fit(matr)
-#     colors = {col:[np.random.random(), np.random.random(),np.random.random()] for col in set(clustering.labels_)}
-#     colors = [colors.get(k) for k in clustering.labels_]
-#
-#     area = np.pi * 10
-#
-#     print(np.block([matr, np.array(clustering.labels_).reshape((len(clustering.labels_), 1))]))
-#
-#     clr=list_of_clusters(matr)
-#     print([cl.cluster_rate for cl in clr])
-#     print([cl.points for cl in clr])
-#
-#     plt.scatter(matr[:,0], matr[:,1], s=area, c=colors, alpha=0.5)
-#
-#     plt.title('Scatter plot pythonspot.com')
-#     plt.xlabel('x')
-#     plt.ylabel('y')
-#     plt.show()
 
 
