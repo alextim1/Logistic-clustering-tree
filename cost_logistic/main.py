@@ -87,13 +87,13 @@ def route(points):
 
 def show_cluster_tree(cluster_tree, points):
     print(cluster_tree.points)
-    print(cluster_tree.weighted_cost)
+    print(cluster_tree.cost)
     if cluster_tree.subroutes != None:
         for cl in cluster_tree.subroutes:
             show_cluster_tree(cl, points)
     else:
         matches = next(x for x in points if x['id'] == cluster_tree.points[0])
-        matches['color'] = cluster_tree.weighted_cost
+        matches['color'] = cluster_tree.cost
 
 
 def cost_balancing(cluster_tree, total_cost, maximum):
@@ -115,7 +115,7 @@ def check_sum(cluster_tree):
             buf = buf + check_sum(cl)
         return  buf
     else:
-        return cluster_tree.weighted_cost
+        return cluster_tree.cost
 
 
 
@@ -213,14 +213,26 @@ class Cluster_Tree(object):
             subroute = route[cl_index == ind]
             subroutes.append(subroute)
 
+        subroutes.sort(key = lambda el: el[0])
+
         internal_transfers = 0
 
         for i in range(len(subroutes) - 1):
             internal_transfers += adj[subroutes[i][-1]][subroutes[i+1][0]]
 
-        for subroute in subroutes:
+        cl_ratios = np.array([1/(len(sbr)*len(subroutes)) for sbr in subroutes])
+        cl_ratios_normalized = cl_ratios/np.sum(cl_ratios)
 
-            clusters.append(Cluster_Tree(adj, subroute, total_route, self._cost + internal_transfers/(len(subroutes)*len(subroute)**2)))
+        # print(cl_ratios_normalized)
+        # print(np.sum(cl_ratios_normalized))
+        # print(internal_transfers)
+        # print(subroutes)
+
+        for (subroute, r) in zip(subroutes, cl_ratios_normalized):
+
+            delta = internal_transfers*r/len(subroute)
+
+            clusters.append(Cluster_Tree(adj, subroute, total_route, self._cost + delta))
 
 
         return clusters

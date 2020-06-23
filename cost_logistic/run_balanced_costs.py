@@ -3,6 +3,9 @@ import main
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import warnings
+
+
 
 
 def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
@@ -39,6 +42,8 @@ def adjustFigAspect(fig,aspect=1):
 
 if __name__ == '__main__':
 
+    warnings.filterwarnings("ignore")
+
     matr = main.pointsField(20, 8, 4, 100)
 
 
@@ -53,12 +58,14 @@ if __name__ == '__main__':
     tree = main.Cluster_Tree(m, rt, rt, 0)
 
     maximum = [0]
-    main.cost_balancing(tree, 100, maximum)
+    #main.cost_balancing(tree, 100, maximum)
 
     main.show_cluster_tree(tree, matr)
 
+    print('###########')
     print(main.check_sum(tree))
-    print(rt[0])
+    print('#########')
+
 
     c1 = 'blue'
     c2 = 'yellow'
@@ -102,4 +109,18 @@ if __name__ == '__main__':
     ax.set_ylabel('y')
 
     fig.show()
+
+    route_length = 0
+
+    for i in range (len(matr) - 1):
+        sh = np.linalg.norm(np.array(matr[i]['xy']) - np.array(matr[i+1]['xy']))
+        route_length += sh
+        # print(route_length)
+        # print('shoulder')
+        # print(sh)
+
+    print('sum_route')
+    print(route_length)
+
+
     input()
