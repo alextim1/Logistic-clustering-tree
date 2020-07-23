@@ -31,13 +31,14 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
                     [8.44, 10.28],
                     [8.42, 10.36],
                     [8.53, 10.27],
+                    [12.38, 12.65],
                     [16.77, 15.26],
                     [16.42, 14.98],
                     [16.53, 14.59],
                     [16.90, 15.97],
                     [16.76, 15.36],
                     [7.92, 12.32],
-                    [16.38, 16.17],
+                    [12.38, 14.17],
                     [7.37, 11.98],
                     [7.83, 12.10],
                     [7.96, 10.64],
@@ -49,6 +50,14 @@ def pointsField(scaleDistance, scaleRadius, nClusters, pointsRate):
                     [17.58, 5.24],
                     [17.76, 5.91],
                     [17.52, 6.26]])
+
+    # sc = np.array([[0., 10.],
+    #                [0., 0.],
+    #                [10., 0.],
+    #                [10.01, 0.01],
+    #                [10.01, 0.02],
+    #                [10., 0.03],
+    #                [10., 10.]])
 
     clust = np.block([[clust], [sc]])
 
@@ -85,15 +94,23 @@ def route(points):
     return rt
 
 
-def show_cluster_tree(cluster_tree, points):
+def show_cluster_tree(cluster_tree, points, check_sum, check_sum_passing,*passing_ratios):
     print(cluster_tree.points)
     print(cluster_tree.cost)
     if cluster_tree.subroutes != None:
         for cl in cluster_tree.subroutes:
-            show_cluster_tree(cl, points)
+            show_cluster_tree(cl, points, check_sum, check_sum_passing, *passing_ratios)
     else:
-        matches = next(x for x in points if x['id'] == cluster_tree.points[0])
-        matches['color'] = cluster_tree.cost
+
+        if len(passing_ratios) != 0:
+            delta = (check_sum_passing - check_sum)/len(points)
+            matches = next((ind,x) for (ind,x) in enumerate(points) if x['id'] == cluster_tree.points[0])
+            matches[1]['color'] = cluster_tree.cost*passing_ratios[matches[0]] - delta
+            print(matches[1]['color'])
+        else:
+            matches = next(x for x in points if x['id'] == cluster_tree.points[0])
+            matches['color'] = cluster_tree.cost
+
 
 
 def cost_balancing(cluster_tree, total_cost, maximum):
@@ -107,6 +124,29 @@ def cost_balancing(cluster_tree, total_cost, maximum):
         if total_cost > maximum[0]:
             maximum[0] = total_cost
 
+def passing_ratios(points):
+
+    ratios = [1]
+    for i in range(1, len(points) - 1):
+        a=(points[i-1]['xy'] - points[i]['xy'])
+        b=(points[i+1]['xy'] - points[i]['xy'])
+
+        ratios.append(2 + np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)))
+
+    ratios.append(1)
+
+    ratios = np.array(ratios)
+
+    #nn = len(points)
+
+    #summa = np.sum(ratios)
+
+    #ratios_normalized = ratios*nn/summa
+
+    return  ratios
+
+
+
 
 def check_sum(cluster_tree):
     buf = 0
@@ -115,7 +155,20 @@ def check_sum(cluster_tree):
             buf = buf + check_sum(cl)
         return  buf
     else:
+
         return cluster_tree.cost
+
+def check_sum_passing(cluster_tree, passing_ratios):
+    # Does not handle case when points indices don't match index in passing_ratios
+    # Order dependent function
+    buf = 0
+    if cluster_tree.subroutes != None:
+        for cl in cluster_tree.subroutes:
+            buf = buf + check_sum_passing(cl, passing_ratios)
+        return  buf
+    else:
+
+        return cluster_tree.cost*passing_ratios[cluster_tree.points[0]]
 
 
 
@@ -170,7 +223,7 @@ class Cluster_Tree(object):
     def costs_by_route(self, adj, route):
         costs = [0]
         if len(route) == 1:
-            return costs
+            return costs   
 
         for i in range(len(route) - 1):
             costs.append(adj[route[i]][route[i + 1]])
@@ -220,7 +273,7 @@ class Cluster_Tree(object):
         for i in range(len(subroutes) - 1):
             internal_transfers += adj[subroutes[i][-1]][subroutes[i+1][0]]
 
-        cl_ratios = np.array([1/(len(sbr)*len(subroutes)) for sbr in subroutes])
+        cl_ratios = np.array([1/(len(sbr)*len(subroutes)) for sbr in subroutes])**(1/4)
         cl_ratios_normalized = cl_ratios/np.sum(cl_ratios)
 
         # print(cl_ratios_normalized)

@@ -57,14 +57,21 @@ if __name__ == '__main__':
 
     tree = main.Cluster_Tree(m, rt, rt, 0)
 
-    maximum = [0]
+    #maximum = [0]
     #main.cost_balancing(tree, 100, maximum)
 
-    main.show_cluster_tree(tree, matr)
+    passing_k = main.passing_ratios(matr)
+
+    ## Two variants with and without passing points
+    chk1= main.check_sum(tree)
+    chk2= main.check_sum_passing(tree,passing_k)
+    main.show_cluster_tree(tree, matr, chk1, chk2, *passing_k)
 
     print('###########')
     print(main.check_sum(tree))
     print('#########')
+    print(passing_k)
+    print('###########')
 
 
     c1 = 'blue'
@@ -111,16 +118,21 @@ if __name__ == '__main__':
     fig.show()
 
     route_length = 0
+    passing_route_length = 0
 
     for i in range (len(matr) - 1):
         sh = np.linalg.norm(np.array(matr[i]['xy']) - np.array(matr[i+1]['xy']))
         route_length += sh
+        passing_route_length += matr[i]['color']
         # print(route_length)
         # print('shoulder')
         # print(sh)
 
+    passing_route_length += matr[-1]['color']
     print('sum_route')
     print(route_length)
+    print('passing route length')
+    print(passing_route_length)
 
 
     input()
